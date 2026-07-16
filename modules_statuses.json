@@ -1,0 +1,7 @@
+{
+    "Auth": true,
+    "Dashboard": true,
+    "Pharmacy": true,
+    "Doctor": true,
+    "Admin": true
+}
