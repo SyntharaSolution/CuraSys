@@ -37,7 +37,7 @@ jobs:
         port: ${{ secrets.VPS_PORT }}
         username: ${{ secrets.VPS_USERNAME }}
         password: ${{ secrets.VPS_PASSWORD }}
-        source: "*,!node_modules,!vendor,!.git,!.env,!tests,!storage/logs/*,!storage/framework/cache/*,!storage/framework/views/*,!storage/framework/sessions/*,!bootstrap/cache/*.php"
+        source: "*,!node_modules,!vendor,!.git,!.env,!public/hot,!tests,!storage/logs/*,!storage/framework/cache/*,!storage/framework/views/*,!storage/framework/sessions/*,!bootstrap/cache/*.php"
         target: "/var/www/curasys"
 
     - name: Execute Deployment Commands via SSH
@@ -61,8 +61,9 @@ jobs:
           # Remove synced vendor to ensure clean install (if any synced incorrectly)
           rm -rf vendor
           
-          # Delete old cache files that were incorrectly synced before
+          # Delete old cache files and hot-reload files that were incorrectly synced before
           rm -f bootstrap/cache/*.php
+          rm -f public/hot
           
           # Install PHP dependencies
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --optimize-autoloader

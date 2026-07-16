@@ -21,6 +21,7 @@ rsync -avz --delete -e "ssh -p $VPS_PORT" \
   --exclude vendor \
   --exclude .git \
   --exclude .env \
+  --exclude public/hot \
   --exclude tests \
   --exclude storage/logs/* \
   --exclude storage/framework/cache/* \
@@ -44,8 +45,9 @@ ssh -p $VPS_PORT $VPS_USER@$VPS_HOST << EOF
   # Remove synced vendor to prevent PHP 8.4 local conflicts
   rm -rf vendor
   
-  # Delete old cache files that were incorrectly synced before
+  # Delete old cache files and hot-reload files that were incorrectly synced before
   rm -f bootstrap/cache/*.php
+  rm -f public/hot
   
   # Install PHP dependencies
   composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --optimize-autoloader
