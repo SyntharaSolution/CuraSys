@@ -20,9 +20,6 @@ jobs:
         extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath
         coverage: none
 
-    - name: Install Composer Dependencies
-      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --optimize-autoloader
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -40,7 +37,7 @@ jobs:
         port: ${{ secrets.VPS_PORT }}
         username: ${{ secrets.VPS_USERNAME }}
         password: ${{ secrets.VPS_PASSWORD }}
-        source: "*,!node_modules"
+        source: "*,!node_modules,!vendor,!.git,!.env,!tests,!storage/logs/*,!storage/framework/cache/*,!storage/framework/views/*,!storage/framework/sessions/*,!bootstrap/cache/*.php"
         target: "/var/www/curasys"
 
     - name: Execute Deployment Commands via SSH
@@ -51,11 +48,24 @@ jobs:
         username: ${{ secrets.VPS_USERNAME }}
         password: ${{ secrets.VPS_PASSWORD }}
         script: |
+          # Clean up any other projects to keep only curasys and html
+          cd /var/www
+          for d in */; do
+            if [ "$d" != "curasys/" ] && [ "$d" != "html/" ]; then
+              echo '${{ secrets.VPS_PASSWORD }}' | sudo -S rm -rf "$d"
+            fi
+          done
+          
           cd /var/www/curasys
           
-          # Fix Permissions
-          echo '${{ secrets.VPS_PASSWORD }}' | sudo -S chown -R www-data:www-data /var/www/curasys
-          echo '${{ secrets.VPS_PASSWORD }}' | sudo -S chmod -R 775 storage bootstrap/cache
+          # Remove synced vendor to ensure clean install (if any synced incorrectly)
+          rm -rf vendor
+          
+          # Delete old cache files that were incorrectly synced before
+          rm -f bootstrap/cache/*.php
+          
+          # Install PHP dependencies
+          composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --optimize-autoloader
           
           # Run Laravel Commands
           php artisan optimize:clear
@@ -63,3 +73,7 @@ jobs:
           php artisan route:cache
           php artisan view:cache
           php artisan migrate --force
+          
+          # Ensure correct permissions
+          echo '${{ secrets.VPS_PASSWORD }}' | sudo -S chown -R administrator:www-data /var/www/curasys
+          echo '${{ secrets.VPS_PASSWORD }}' | sudo -S chmod -R 775 /var/www/curasys/storage /var/www/curasys/bootstrap/cache
